@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Mi Negocio - Juego Contable</title>
+     <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+        }
+        #mensaje-resultado {
+            font-weight: bold;
+        }
+        .tabla-contable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            background: white;
+        }
+        .tabla-contable th,
+        .tabla-contable td {
+            border: 1px solid #bbb;
+            padding: 8px;
+            text-align: left;
+        }
+        .tabla-contable select,
+        .tabla-contable input {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 80px;
+            padding: 7px;
+        }
+        .tabla-contable th {
+            background: #e8f5e9;
+        }
+        .panel-contable {
+            margin-top: 16px;
+            padding: 12px;
+            overflow-x: auto;
+            background: #f8faf9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .esquema-mayor {
+            min-width: 220px;
+            display: inline-block;
+            vertical-align: top;
+            margin: 8px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #aaa;
+        }
+        .esquema-mayor h4 {
+            margin: 0 0 8px;
+        }
+        .esquema-mayor table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .esquema-mayor th,
+        .esquema-mayor td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: right;
+        }
+        .pantalla-felicitaciones {
+            margin: 20px 0;
+            padding: 24px 16px;
+            background: #e8f5e9;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+        }
+        .pantalla-felicitaciones h2 {
+            color: #26752a;
+        }
+        .opcion-asiento {
+            display: block;
+            width: 100%;
+            text-align: left;
+            white-space: pre-line;
+        }
+        #nombre-usuario {
+            box-sizing: border-box;
+            max-width: 100%;
+            padding: 10px;
+            margin: 6px;
+        }
+        #pista-nivel-cuatro {
+            white-space: pre-line;
+        }
+        .tablero-memorama {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 16px 0;
+        }
+        .carta-memorama {
+            min-height: 100px;
+            margin: 0;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+            color: white;
+        }
+        .carta-memorama.encontrada {
+            cursor: default;
+        }
+        .oculto {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>  Mi Negocio</h1>
+    <h2>¡Aprende Contabilidad jugando!</h2>
+
+    <!-- SECCIÓN 1: ELECCIÓN DE NEGOCIO -->
+    <div id="pantalla-inicio" class="card">
+        <div id="acceso-perfil">
+            <p>Crea o escribe tu nombre de usuario para guardar tu avance en este dispositivo.</p>
+            <label for="nombre-usuario">Nombre de usuario</label>
+            <input id="nombre-usuario" type="text" maxlength="30" autocomplete="nickname">
+            <button onclick="usarPerfil()">Crear / entrar</button>
+        </div>
+        <div id="panel-perfil" class="oculto">
+            <p>Jugador: <strong id="nombre-usuario-activo"></strong></p>
+            <p>Estrellas acumuladas: <strong><span id="estrellas-inicio">0</span> ⭐</strong></p>
+            <p id="mensaje-estrellas-inicio" aria-live="polite"></p>
+            <p id="estado-partida-guardada" aria-live="polite"></p>
+            <button id="boton-continuar-partida" class="oculto" onclick="reanudarPartida()">Continuar partida</button>
+            <button id="boton-nueva-partida" onclick="mostrarSeleccionNegocio()">Nueva partida</button>
+            <button onclick="cambiarPerfil()">Cambiar usuario</button>
+        </div>
+        <div id="seleccion-negocio" class="oculto">
+            <p>Elige el negocio que quieres administrar:</p>
+            <button onclick="elegirNegocio('Papeleria', 5000)">Papelería</button>
+            <button onclick="elegirNegocio('Ferretería', 8000)">Ferretería</button>
+            <button onclick="elegirNegocio('Tienda de ropa', 6000)">Tienda de ropa</button>
+        </div>
+    </div>
+
+    <!--SECCIÓN 2: JUEGO / SITUACIONES -->
+    <div id="pantalla-juego" class="card oculto">
+        <h2 id="titulo-negocio"></h2>
+        <h3>Capital actual: $<span id="capital">0</span></h3>
+        <p>Estrellas acumuladas: <strong><span id="estrellas-acumuladas">0</span> ⭐</strong></p>
+        <p id="mensaje-estrellas" aria-live="polite"></p>
+        <hr>
+        <p id="progreso-situacion"></p>
+        <p id="texto-situacion" style="font-weight: bold;"></p>
+        <div id="opciones-respuesta"></div>
+        <p id="mensaje-resultado" aria-live="polite"></p>
+        <button id="boton-continuar" class="oculto" onclick="continuarJuego()">Siguiente situación</button>
+
+        <section id="contenido-nivel-dos" class="oculto">
+            <div id="ejercicios-nivel-dos">
+                <h3>Nivel 2: Diario y esquemas de mayor</h3>
+                <p id="progreso-nivel-dos"></p>
+                <p id="texto-situacion-nivel-dos" style="font-weight: bold;"></p>
+                <p>Elige el asiento correcto. Debe y Haber deben quedar iguales.</p>
+                <div id="opciones-nivel-dos"></div>
+                <p id="mensaje-nivel-dos" aria-live="polite"></p>
+                <button id="boton-continuar-nivel-dos" class="oculto" onclick="continuarNivelDos()">Siguiente situación</button>
+            </div>
+
+            <div id="ejercicios-nivel-tres" class="oculto">
+                <h3>Nivel 3: Operaciones contables avanzadas</h3>
+                <p id="progreso-nivel-tres"></p>
+                <p id="texto-situacion-nivel-tres" style="font-weight: bold;"></p>
+                <p>Analiza todas las cuentas del asiento. Debe y Haber deben quedar iguales.</p>
+                <div id="opciones-nivel-tres"></div>
+                <p id="mensaje-nivel-tres" aria-live="polite"></p>
+                <button id="boton-continuar-nivel-tres" class="oculto" onclick="continuarNivelTres()">Siguiente situación</button>
+            </div>
+
+            <div id="ejercicios-nivel-cuatro" class="oculto">
+                <h3>Nivel 4: Registra y revisa los asientos</h3>
+                <p id="progreso-nivel-cuatro"></p>
+                <p id="texto-situacion-nivel-cuatro" style="font-weight: bold;"></p>
+                <p>Elige uno de los tres asientos posibles. Cada respuesta correcta se agregará al diario rayado y al esquema de mayor. Puedes usar una pista explicada por 2 estrellas.</p>
+                <div id="captura-asiento-nivel-cuatro"></div>
+                <button id="boton-pista-nivel-cuatro" onclick="mostrarPistaNivelCuatro()">Ver respuesta explicada (2 ⭐)</button>
+                <p id="pista-nivel-cuatro" aria-live="polite"></p>
+                <p id="mensaje-nivel-cuatro" aria-live="polite"></p>
+                <button id="boton-continuar-nivel-cuatro" class="oculto" onclick="continuarNivelCuatro()">Siguiente situación</button>
+            </div>
+
+            <div id="ejercicios-nivel-cinco" class="oculto">
+                <h3>Nivel 5: Memorama de conceptos contables</h3>
+                <p id="progreso-nivel-cinco"></p>
+                <p>Voltea dos tarjetas y relaciona cada cuenta contable con el concepto que la describe. Cada ficha tiene un color diferente.</p>
+                <div id="tablero-memorama" class="tablero-memorama"></div>
+                <p id="mensaje-nivel-cinco" aria-live="polite"></p>
+            </div>
+
+            <div id="libros-contables">
+                <hr>
+                <h3>Libros contables</h3>
+                <p>Referencia: N3-S2 significa nivel 3, situación 2; “Apertura” identifica el capital inicial.</p>
+                <button id="boton-diario" onclick="alternarPanel('panel-diario', this)" aria-expanded="false">Ver diario rayado</button>
+                <button id="boton-mayor" onclick="alternarPanel('panel-mayor', this)" aria-expanded="false">Ver esquemas de mayor</button>
+                <div id="panel-diario" class="panel-contable oculto">
+                    <h4>Diario rayado</h4>
+                    <div id="contenido-diario"></div>
+                </div>
+                <div id="panel-mayor" class="panel-contable oculto">
+                    <h4>Esquemas de mayor (cuentas T)</h4>
+                    <div id="contenido-mayor"></div>
+                </div>
+            </div>
+        </section>
+        <section id="pantalla-felicitaciones" class="pantalla-felicitaciones oculto" aria-live="polite">
+            <h2 id="titulo-felicitaciones"></h2>
+            <p id="texto-felicitaciones"></p>
+            <button id="boton-felicitaciones"></button>
+        </section>
+    </div>
+
+    <script>
+        let negocioActual = "";
+        let dineroActual = 0;
+        let nivelActual = 0;
+
+        const situaciones = [
+            {
+                texto: "Un cliente te compra mercancía a crédito por $1,000. ¿Cómo debes registrar la operación?",
+                opciones: [
+                    { texto: "Aumentar Cuentas por Cobrar y registrar la Venta", correcto: true, recompensa: 1000, mensaje: "¡Correcto! Entra un derecho de cobro y se registra el ingreso." },
+                    { texto: "Restar dinero de la caja", correcto: false, recompensa: -200, mensaje: "Incorrecto. No se debe restar dinero de la caja, ya que la venta fue a crédito." }
+                ]
+            },
+            {
+                texto: "Pagas $500 de renta del local en efectivo. ¿Qué debes registrar?",
+                opciones: [
+                    { texto: "Un gasto de renta y una disminución de caja", correcto: true, recompensa: 500, mensaje: "¡Correcto! El pago aumenta los gastos y disminuye el efectivo." },
+                    { texto: "Una cuenta por cobrar al arrendador", correcto: false, recompensa: -200, mensaje: "Incorrecto. Al pagar la renta no se genera una cuenta por cobrar." }
+                ]
+            },
+            {
+                texto: "Compras mercancía por $800 y la pagas en efectivo. ¿Qué sucede?",
+                opciones: [
+                    { texto: "Aumenta el inventario y disminuye la caja", correcto: true, recompensa: 800, mensaje: "¡Correcto! Recibes mercancía y sale efectivo de la caja." },
+                    { texto: "Disminuye el inventario y aumenta la caja", correcto: false, recompensa: -200, mensaje: "Incorrecto. La compra aumenta el inventario y reduce el efectivo." }
+                ]
+            }
+        ];
+
+        const situacionesNivelDos = [
+            {
+                texto: "Pagas $500 de renta del local en efectivo. Elige cómo registrar la operación:",
+                opciones: [
+                    { texto: "Debe: Gasto de renta $500 / Haber: Caja $500", correcto: true },
+                    { texto: "Debe: Caja $500 / Haber: Gasto de renta $500", correcto: false }
+                ],
+                asiento: {
+                    concepto: "Pago de renta en efectivo",
+                    lineas: [
+                        { cuenta: "Gasto de renta", debe: 500, haber: 0 },
+                        { cuenta: "Caja", debe: 0, haber: 500 }
+                    ]
+                }
+            },
+            {
+                texto: "Compras mercancía por $800 a crédito. ¿Cuál es el asiento correcto?",
+                opciones: [
+                    { texto: "Debe: Inventario $800 / Haber: Proveedores $800", correcto: true },
+                    { texto: "Debe: Proveedores $800 / Haber: Inventario $800", correcto: false }
+                ],
+                asiento: {
+                    concepto: "Compra de mercancía a crédito",
+                    lineas: [
+                        { cuenta: "Inventario", debe: 800, haber: 0 },
+                        { cuenta: "Proveedores", debe: 0, haber: 800 }
+                    ]
+                }
+            },
+            {
+                texto: "Pagas $300 en efectivo a un proveedor. ¿Qué asiento corresponde?",
+                opciones: [
+                    { texto: "Debe: Proveedores $300 / Haber: Caja $300", correcto: true },
+                    { texto: "Debe: Caja $300 / Haber: Proveedores $300", correcto: false }
+                ],
+                asiento: {
+                    concepto: "Pago parcial a proveedor",
+                    lineas: [
+                        { cuenta: "Proveedores", debe: 300, haber: 0 },
+                        { cuenta: "Caja", debe: 0, haber: 300 }
+                    ]
+                }
+            }
+        ];
+
+        const situacionesNivelTres = [
+            {
+                texto: "Compras mercancía por $2,400: pagas $900 en efectivo y el resto queda a crédito. ¿Cuál es el asiento?",
+                asiento: {
+                    concepto: "Compra de mercancía, parte en efectivo y parte a crédito",
+                    lineas: [
+                        { cuenta: "Inventario", debe: 2400, haber: 0 },
+                        { cuenta: "Caja", debe: 0, haber: 900 },
+                        { cuenta: "Proveedores", debe: 0, haber: 1500 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Inventario $2,400 / Haber: Caja $900 y Proveedores $1,500", correcto: true },
+                    { texto: "Debe: Caja $900 y Proveedores $1,500 / Haber: Inventario $2,400", correcto: false }
+                ]
+            },
+            {
+                texto: "Un cliente paga $1,200 de una deuda anterior mediante depósito bancario. ¿Cómo se registra?",
+                asiento: {
+                    concepto: "Cobro a cliente mediante depósito bancario",
+                    lineas: [
+                        { cuenta: "Bancos", debe: 1200, haber: 0 },
+                        { cuenta: "Clientes", debe: 0, haber: 1200 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Clientes $1,200 / Haber: Bancos $1,200", correcto: false },
+                    { texto: "Debe: Bancos $1,200 / Haber: Clientes $1,200", correcto: true }
+                ]
+            },
+            {
+                texto: "Compras equipo de cómputo por $6,000; pagas $2,000 en efectivo y firmas un documento por el resto.",
+                asiento: {
+                    concepto: "Compra de equipo con pago parcial y documento por pagar",
+                    lineas: [
+                        { cuenta: "Equipo de cómputo", debe: 6000, haber: 0 },
+                        { cuenta: "Caja", debe: 0, haber: 2000 },
+                        { cuenta: "Documentos por pagar", debe: 0, haber: 4000 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Equipo de cómputo $6,000 / Haber: Caja $2,000 y Documentos por pagar $4,000", correcto: true },
+                    { texto: "Debe: Caja $2,000 y Documentos por pagar $4,000 / Haber: Equipo de cómputo $6,000", correcto: false }
+                ]
+            },
+            {
+                texto: "Recibes un préstamo bancario de $10,000 y el banco deposita el dinero en tu cuenta.",
+                asiento: {
+                    concepto: "Préstamo recibido en cuenta bancaria",
+                    lineas: [
+                        { cuenta: "Bancos", debe: 10000, haber: 0 },
+                        { cuenta: "Préstamo bancario por pagar", debe: 0, haber: 10000 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Préstamo bancario por pagar $10,000 / Haber: Bancos $10,000", correcto: false },
+                    { texto: "Debe: Bancos $10,000 / Haber: Préstamo bancario por pagar $10,000", correcto: true }
+                ]
+            },
+            {
+                texto: "Pagas por adelantado $3,600 de renta que cubrirá los próximos 3 meses. Registra el pago como renta pagada por anticipado.",
+                asiento: {
+                    concepto: "Pago anticipado de renta por tres meses",
+                    lineas: [
+                        { cuenta: "Rentas pagadas por anticipado", debe: 3600, haber: 0 },
+                        { cuenta: "Caja", debe: 0, haber: 3600 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Gasto de renta $3,600 / Haber: Rentas pagadas por anticipado $3,600", correcto: false },
+                    { texto: "Debe: Rentas pagadas por anticipado $3,600 / Haber: Caja $3,600", correcto: true }
+                ]
+            },
+            {
+                texto: "Realizas una venta a crédito por $4,500. En este ejercicio registra la venta sin calcular el costo de la mercancía.",
+                asiento: {
+                    concepto: "Venta de mercancía a crédito",
+                    lineas: [
+                        { cuenta: "Clientes", debe: 4500, haber: 0 },
+                        { cuenta: "Ventas", debe: 0, haber: 4500 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Ventas $4,500 / Haber: Clientes $4,500", correcto: false },
+                    { texto: "Debe: Clientes $4,500 / Haber: Ventas $4,500", correcto: true }
+                ]
+            },
+            {
+                texto: "El cliente de una venta a crédito devuelve mercancía por $700. Registra la devolución disminuyendo la deuda del cliente.",
+                asiento: {
+                    concepto: "Devolución sobre venta a crédito",
+                    lineas: [
+                        { cuenta: "Devoluciones sobre ventas", debe: 700, haber: 0 },
+                        { cuenta: "Clientes", debe: 0, haber: 700 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Devoluciones sobre ventas $700 / Haber: Clientes $700", correcto: true },
+                    { texto: "Debe: Clientes $700 / Haber: Devoluciones sobre ventas $700", correcto: false }
+                ]
+            },
+            {
+                texto: "Pagas $1,500 a un proveedor: $1,000 mediante transferencia bancaria y $500 en efectivo.",
+                asiento: {
+                    concepto: "Pago a proveedor por transferencia y efectivo",
+                    lineas: [
+                        { cuenta: "Proveedores", debe: 1500, haber: 0 },
+                        { cuenta: "Bancos", debe: 0, haber: 1000 },
+                        { cuenta: "Caja", debe: 0, haber: 500 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Proveedores $1,500 / Haber: Bancos $1,000 y Caja $500", correcto: true },
+                    { texto: "Debe: Bancos $1,000 y Caja $500 / Haber: Proveedores $1,500", correcto: false }
+                ]
+            },
+            {
+                texto: "El negocio obtiene un servicio de publicidad por $850 y lo pagará el próximo mes. Registra el gasto pendiente de pago.",
+                asiento: {
+                    concepto: "Servicio de publicidad pendiente de pago",
+                    lineas: [
+                        { cuenta: "Gasto de publicidad", debe: 850, haber: 0 },
+                        { cuenta: "Acreedores diversos", debe: 0, haber: 850 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Acreedores diversos $850 / Haber: Gasto de publicidad $850", correcto: false },
+                    { texto: "Debe: Gasto de publicidad $850 / Haber: Acreedores diversos $850", correcto: true }
+                ]
+            },
+            {
+                texto: "El propietario aporta equipo para el negocio valuado en $2,800. Registra el aumento del activo y del capital.",
+                asiento: {
+                    concepto: "Aportación de equipo por el propietario",
+                    lineas: [
+                        { cuenta: "Equipo de oficina", debe: 2800, haber: 0 },
+                        { cuenta: "Capital", debe: 0, haber: 2800 }
+                    ]
+                },
+                opciones: [
+                    { texto: "Debe: Capital $2,800 / Haber: Equipo de oficina $2,800", correcto: false },
+                    { texto: "Debe: Equipo de oficina $2,800 / Haber: Capital $2,800", correcto: true }
+                ]
+            }
+        ];
+
+        const situacionesNivelCuatro = [
+            {
+                texto: "Compra mercancía por $3,200: paga $1,200 con cheque y deja el resto a crédito.",
+                opcionesCuenta: ["Inventario", "Bancos", "Proveedores"],
+                pistas: [
+                    "Se reciben mercancías y hay dos formas de financiarlas: una parte sale del banco y otra queda pendiente.",
+                    "Usa Inventario para lo recibido, Bancos para el cheque y Proveedores para la deuda. El inventario aumenta; las formas de pago van al otro lado."
+                ],
+                asiento: { concepto: "Compra de mercancía con cheque y a crédito", lineas: [
+                    { cuenta: "Inventario", debe: 3200, haber: 0 },
+                    { cuenta: "Bancos", debe: 0, haber: 1200 },
+                    { cuenta: "Proveedores", debe: 0, haber: 2000 }
+                ] }
+            },
+            {
+                texto: "Un cliente liquida $1,750 de su cuenta y deposita el dinero en el banco.",
+                opcionesCuenta: ["Bancos", "Clientes", "Caja"],
+                pistas: [
+                    "El negocio recibe dinero en el banco y se reduce lo que el cliente debía.",
+                    "Bancos es un activo que aumenta y Clientes es un activo que disminuye. El aumento va al Debe y la disminución al Haber."
+                ],
+                asiento: { concepto: "Cobro a cliente depositado en bancos", lineas: [
+                    { cuenta: "Bancos", debe: 1750, haber: 0 },
+                    { cuenta: "Clientes", debe: 0, haber: 1750 }
+                ] }
+            },
+            {
+                texto: "Se paga el recibo de electricidad por $640 en efectivo.",
+                opcionesCuenta: ["Gasto de electricidad", "Caja", "Bancos"],
+                pistas: [
+                    "El recibo representa un gasto del negocio y el pago reduce el efectivo.",
+                    "Gasto de electricidad aumenta en el Debe; Caja disminuye en el Haber."
+                ],
+                asiento: { concepto: "Pago de servicio de electricidad", lineas: [
+                    { cuenta: "Gasto de electricidad", debe: 640, haber: 0 },
+                    { cuenta: "Caja", debe: 0, haber: 640 }
+                ] }
+            },
+            {
+                texto: "Se compra mobiliario por $4,800: se pagan $1,800 en efectivo y se firma un documento por $3,000.",
+                opcionesCuenta: ["Mobiliario y equipo", "Caja", "Documentos por pagar"],
+                pistas: [
+                    "Registra el mobiliario recibido y separa el pago entre efectivo y la deuda documentada.",
+                    "Mobiliario y equipo aumenta en el Debe. Caja y Documentos por pagar se acreditan; comprueba que $1,800 más $3,000 sumen el valor del mobiliario."
+                ],
+                asiento: { concepto: "Compra de mobiliario con pago parcial y documento", lineas: [
+                    { cuenta: "Mobiliario y equipo", debe: 4800, haber: 0 },
+                    { cuenta: "Caja", debe: 0, haber: 1800 },
+                    { cuenta: "Documentos por pagar", debe: 0, haber: 3000 }
+                ] }
+            },
+            {
+                texto: "El negocio paga $900 de una deuda con proveedores mediante transferencia bancaria.",
+                opcionesCuenta: ["Proveedores", "Bancos", "Caja"],
+                pistas: [
+                    "Al pagar una deuda, la obligación con el proveedor disminuye y también disminuye el dinero del banco.",
+                    "Proveedores disminuye en el Debe; Bancos disminuye en el Haber."
+                ],
+                asiento: { concepto: "Pago a proveedores por transferencia", lineas: [
+                    { cuenta: "Proveedores", debe: 900, haber: 0 },
+                    { cuenta: "Bancos", debe: 0, haber: 900 }
+                ] }
+            },
+            {
+                texto: "Se realiza una venta por $2,650 y el cliente paga en efectivo. Registra solo la venta, sin el costo de mercancía.",
+                opcionesCuenta: ["Caja", "Ventas", "Clientes"],
+                pistas: [
+                    "En esta operación entra efectivo y se reconoce un ingreso por ventas. No registres el costo de la mercancía.",
+                    "Caja aumenta en el Debe y Ventas aumenta en el Haber."
+                ],
+                asiento: { concepto: "Venta de mercancía cobrada en efectivo", lineas: [
+                    { cuenta: "Caja", debe: 2650, haber: 0 },
+                    { cuenta: "Ventas", debe: 0, haber: 2650 }
+                ] }
+            },
+            {
+                texto: "Se devuelve al proveedor mercancía por $560 que se había comprado a crédito; el proveedor reduce la deuda.",
+                opcionesCuenta: ["Proveedores", "Inventario", "Compras"],
+                pistas: [
+                    "La devolución reduce tanto la mercancía que conservas como la deuda pendiente con el proveedor.",
+                    "Proveedores disminuye en el Debe e Inventario disminuye en el Haber."
+                ],
+                asiento: { concepto: "Devolución de mercancía a proveedor", lineas: [
+                    { cuenta: "Proveedores", debe: 560, haber: 0 },
+                    { cuenta: "Inventario", debe: 0, haber: 560 }
+                ] }
+            },
+            {
+                texto: "El negocio recibe $1,400 en efectivo por un servicio de reparación que prestó.",
+                opcionesCuenta: ["Caja", "Ingresos por servicios", "Clientes"],
+                pistas: [
+                    "El negocio recibe efectivo y obtiene un ingreso por prestar el servicio.",
+                    "Caja aumenta en el Debe; Ingresos por servicios aumenta en el Haber."
+                ],
+                asiento: { concepto: "Ingreso por servicio cobrado en efectivo", lineas: [
+                    { cuenta: "Caja", debe: 1400, haber: 0 },
+                    { cuenta: "Ingresos por servicios", debe: 0, haber: 1400 }
+                ] }
+            },
+            {
+                texto: "Se paga una campaña de publicidad por $1,100: $400 en efectivo y $700 mediante transferencia.",
+                opcionesCuenta: ["Gasto de publicidad", "Caja", "Bancos"],
+                pistas: [
+                    "Registra un gasto de publicidad y distribuye el pago entre Caja y Bancos.",
+                    "Gasto de publicidad va al Debe. Caja y Bancos van al Haber; verifica que $400 más $700 sea $1,100."
+                ],
+                asiento: { concepto: "Pago de publicidad en efectivo y bancos", lineas: [
+                    { cuenta: "Gasto de publicidad", debe: 1100, haber: 0 },
+                    { cuenta: "Caja", debe: 0, haber: 400 },
+                    { cuenta: "Bancos", debe: 0, haber: 700 }
+                ] }
+            },
+            {
+                texto: "El propietario aporta una computadora valuada en $3,500 y $2,000 en efectivo al negocio.",
+                opcionesCuenta: ["Equipo de cómputo", "Caja", "Capital"],
+                pistas: [
+                    "El negocio recibe dos activos como aportación del propietario: equipo y efectivo.",
+                    "Equipo de cómputo y Caja aumentan en el Debe. Capital aumenta en el Haber por el total de ambos bienes."
+                ],
+                asiento: { concepto: "Aportación de computadora y efectivo del propietario", lineas: [
+                    { cuenta: "Equipo de cómputo", debe: 3500, haber: 0 },
+                    { cuenta: "Caja", debe: 2000, haber: 0 },
+                    { cuenta: "Capital", debe: 0, haber: 5500 }
+                ] }
+            }
+        ];
+
+        const parejasMemoramaNivelCinco = [
+            {
+                referencia: "cuenta-caja",
+                cuenta: "Caja",
+                concepto: "Dinero en efectivo que el negocio tiene disponible."
+            },
+            {
+                referencia: "cuenta-bancos",
+                cuenta: "Bancos",
+                concepto: "Dinero del negocio depositado en cuentas bancarias."
+            },
+            {
+                referencia: "cuenta-clientes",
+                cuenta: "Clientes",
+                concepto: "Personas o empresas que deben dinero al negocio por compras a crédito."
+            },
+            {
+                referencia: "cuenta-inventario",
+                cuenta: "Inventario",
+                concepto: "Mercancías que el negocio tiene para vender."
+            },
+            {
+                referencia: "cuenta-proveedores",
+                cuenta: "Proveedores",
+                concepto: "Personas o empresas a quienes el negocio debe por compras a crédito."
+            },
+            {
+                referencia: "cuenta-capital",
+                cuenta: "Capital",
+                concepto: "Aportaciones del propietario y recursos propios del negocio."
+            },
+            {
+                referencia: "cuenta-ventas",
+                cuenta: "Ventas",
+                concepto: "Ingresos obtenidos por vender mercancías."
+            },
+            {
+                referencia: "cuenta-gasto-renta",
+                cuenta: "Gasto de renta",
+                concepto: "Costo por usar o alquilar el local del negocio."
+            },
+            {
+                referencia: "cuenta-documentos-por-pagar",
+                cuenta: "Documentos por pagar",
+                concepto: "Deudas respaldadas por pagarés u otros documentos."
+            },
+            {
+                referencia: "cuenta-ingresos-servicios",
+                cuenta: "Ingresos por servicios",
+                concepto: "Ingresos que recibe el negocio por los servicios que presta."
+            }
+        ];
+
+        function elegirNegocio(nombre, capitalInicial) {
+            if (!perfilActivo) {
+                document.getElementById("estado-partida-guardada").textContent =
+                    "Crea o entra con un nombre de usuario antes de comenzar.";
+                return;
+            }
+            negocioActual = nombre;
+            dineroActual = capitalInicial;
+            nivelActual = 0;
+            nivelDosActual = 0;
+            nivelTresActual = 0;
+            nivelCuatroActual = 0;
+            nivelEnCurso = 1;
+            ultimaPosicionCorrectaNivelTres = -1;
+            iniciarSeguimientoNivel();
+            asientosRegistrados = [];
+            movimientosMayor = {};
+
+            document.getElementById("pantalla-inicio").classList.add("oculto");
+            document.getElementById("pantalla-juego").classList.remove("oculto");
+            document.getElementById("pantalla-felicitaciones").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-dos").classList.remove("oculto");
+            document.getElementById("ejercicios-nivel-tres").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-cuatro").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-cinco").classList.add("oculto");
+            document.getElementById("libros-contables").classList.remove("oculto");
+
+            document.getElementById("titulo-negocio").textContent = "Negocio: " + negocioActual;
+            actualizarCapital();
+            actualizarEstrellas();
+            document.getElementById("contenido-nivel-dos").classList.add("oculto");
+            document.getElementById("progreso-situacion").classList.remove("oculto");
+            document.getElementById("texto-situacion").classList.remove("oculto");
+            document.getElementById("opciones-respuesta").classList.remove("oculto");
+            document.getElementById("mensaje-resultado").classList.remove("oculto");
+            document.getElementById("boton-continuar").classList.add("oculto");
+            mostrarSituacion();
+            guardarPartida();
+        }
+
+        let nivelDosActual = 0;
+        let nivelTresActual = 0;
+        let nivelCuatroActual = 0;
+        let pistaActualNivelCuatro = 0;
+        let ultimaPosicionCorrectaNivelTres = -1;
+        let asientosRegistrados = [];
+        let movimientosMayor = {};
+        let aciertosPrimerIntento = 0;
+        let intentoPreguntaRegistrado = false;
+        let ayudaUsadaEnPregunta = false;
+        let nivelRecompensadoEnJuego = new Set();
+        let errorAlGuardarEstrellas = false;
+        let perfilActivo = null;
+        let clavePerfilActivo = "";
+        let estrellasAcumuladas = 0;
+        let nivelEnCurso = 0;
+        let preguntaResuelta = false;
+        let mensajeRespuestaGuardada = "";
+        function usarPerfil() {
+            const nombre = document.getElementById("nombre-usuario").value.trim();
+            const estado = document.getElementById("estado-partida-guardada");
+            if (!nombre) {
+                estado.textContent = "Escribe un nombre de usuario para continuar.";
+                return;
+            }
+
+            const identidad = nombre.toLocaleLowerCase("es");
+            clavePerfilActivo = `mi-negocio-perfil:${encodeURIComponent(identidad)}`;
+            try {
+                const guardado = localStorage.getItem(clavePerfilActivo);
+                if (guardado === null) {
+                    const yaHayPerfiles = Object.keys(localStorage)
+                        .some(clave => clave.startsWith("mi-negocio-perfil:"));
+                    const estrellasAnteriores = !yaHayPerfiles
+                        ? localStorage.getItem("mi-negocio-estrellas")
+                        : null;
+                    if (estrellasAnteriores !== null && !/^\d+$/.test(estrellasAnteriores)) {
+                        throw new Error("El saldo de estrellas anterior no es válido.");
+                    }
+                    const estrellasIniciales = estrellasAnteriores === null
+                        ? 0
+                        : Number(estrellasAnteriores);
+                    if (!Number.isInteger(estrellasIniciales) || estrellasIniciales < 0) {
+                        throw new Error("El saldo de estrellas anterior no es válido.");
+                    }
+                    perfilActivo = {
+                        nombre,
+                        estrellas: estrellasIniciales,
+                        progreso: null,
+                        nivelesCompletados: []
+                    };
+                } else {
+                    const perfilGuardado = JSON.parse(guardado);
+                    if (!perfilGuardado || typeof perfilGuardado !== "object" ||
+                        !Number.isInteger(perfilGuardado.estrellas) || perfilGuardado.estrellas < 0 ||
+                        (perfilGuardado.progreso !== null &&
+                            (!perfilGuardado.progreso ||
+                                typeof perfilGuardado.progreso !== "object" ||
+                                !Number.isInteger(perfilGuardado.progreso.nivel) ||
+                                perfilGuardado.progreso.nivel < 1 ||
+                                perfilGuardado.progreso.nivel > 5 ||
+                                !Number.isFinite(perfilGuardado.progreso.capital) ||
+                                !Number.isInteger(perfilGuardado.progreso.situacion) ||
+                                perfilGuardado.progreso.situacion < 0)) ||
+                        (perfilGuardado.nivelesCompletados !== undefined &&
+                            !Array.isArray(perfilGuardado.nivelesCompletados))) {
+                        throw new Error("Los datos guardados de este usuario no son válidos.");
+                    }
+                    perfilActivo = {
+                        nombre: perfilGuardado.nombre || nombre,
+                        estrellas: perfilGuardado.estrellas,
+                        progreso: perfilGuardado.progreso || null,
+                        nivelesCompletados: Array.isArray(perfilGuardado.nivelesCompletados)
+                            ? perfilGuardado.nivelesCompletados
+                            : []
+                    };
+                }
+
+                estrellasAcumuladas = perfilActivo.estrellas;
+                errorAlGuardarEstrellas = false;
+                document.getElementById("acceso-perfil").classList.add("oculto");
+                document.getElementById("panel-perfil").classList.remove("oculto");
+                document.getElementById("nombre-usuario-activo").textContent = perfilActivo.nombre;
+                document.getElementById("seleccion-negocio").classList.add("oculto");
+                document.getElementById("boton-continuar-partida").classList.toggle("oculto", !perfilActivo.progreso);
+                estado.textContent = perfilActivo.progreso
+                    ? `Partida guardada: ${perfilActivo.progreso.negocio}, nivel ${perfilActivo.progreso.nivel}, situación ${(perfilActivo.progreso.situacion || 0) + 1}.`
+                    : "Este usuario aún no tiene una partida guardada.";
+                actualizarEstrellas();
+                guardarPerfil();
+            } catch (error) {
+                estado.textContent = `No se pudo abrir o guardar el perfil: ${error.message}`;
+            }
+        }
+
+        function guardarPerfil() {
+            if (!perfilActivo || !clavePerfilActivo) return;
+            try {
+                perfilActivo.estrellas = estrellasAcumuladas;
+                localStorage.setItem(clavePerfilActivo, JSON.stringify(perfilActivo));
+                errorAlGuardarEstrellas = false;
+            } catch (error) {
+                errorAlGuardarEstrellas = true;
+            }
+            actualizarEstrellas();
+        }
+
+        function guardarEstrellas() {
+            guardarPerfil();
+        }
+
+        function guardarPartida() {
+            if (!perfilActivo || !negocioActual || nivelEnCurso < 1) return;
+            perfilActivo.progreso = {
+                negocio: negocioActual,
+                capital: dineroActual,
+                nivel: nivelEnCurso,
+                situacion: obtenerSituacionActual(),
+                aciertosPrimerIntento,
+                intentoPreguntaRegistrado,
+                ayudaUsadaEnPregunta,
+                preguntaResuelta,
+                mensajeRespuesta: mensajeRespuestaGuardada,
+                asientosRegistrados,
+                movimientosMayor,
+                ultimaPosicionCorrectaNivelTres,
+                memorama: nivelEnCurso === 5 ? guardarEstadoMemorama() : null
+            };
+            guardarPerfil();
+            actualizarEstadoPartidaGuardada();
+        }
+
+        function obtenerSituacionActual() {
+            if (nivelEnCurso === 1) return nivelActual;
+            if (nivelEnCurso === 2) return nivelDosActual;
+            if (nivelEnCurso === 3) return nivelTresActual;
+            if (nivelEnCurso === 4) return nivelCuatroActual;
+            return nivelEnCurso === 5 ? parejasEncontradasMemorama.size : 0;
+        }
+
+        function actualizarEstadoPartidaGuardada() {
+            if (!perfilActivo) return;
+            const estado = document.getElementById("estado-partida-guardada");
+            estado.textContent = errorAlGuardarEstrellas
+                ? "No se pudo guardar la partida en este navegador. El avance actual solo está disponible durante esta sesión."
+                : perfilActivo.progreso
+                ? `Partida guardada: ${perfilActivo.progreso.negocio}, nivel ${perfilActivo.progreso.nivel}, situación ${(perfilActivo.progreso.situacion || 0) + 1}.`
+                : "Este usuario aún no tiene una partida guardada.";
+            document.getElementById("boton-continuar-partida")
+                .classList.toggle("oculto", !perfilActivo.progreso);
+        }
+
+        function cambiarPerfil() {
+            if (document.getElementById("pantalla-juego").classList.contains("oculto")) {
+                perfilActivo = null;
+                clavePerfilActivo = "";
+                document.getElementById("panel-perfil").classList.add("oculto");
+                document.getElementById("acceso-perfil").classList.remove("oculto");
+                document.getElementById("seleccion-negocio").classList.add("oculto");
+                document.getElementById("nombre-usuario").focus();
+                return;
+            }
+            guardarPartida();
+            document.getElementById("pantalla-juego").classList.add("oculto");
+            document.getElementById("pantalla-inicio").classList.remove("oculto");
+            perfilActivo = null;
+            clavePerfilActivo = "";
+            estrellasAcumuladas = 0;
+            actualizarEstrellas();
+            document.getElementById("panel-perfil").classList.add("oculto");
+            document.getElementById("acceso-perfil").classList.remove("oculto");
+            document.getElementById("seleccion-negocio").classList.add("oculto");
+        }
+
+        function mostrarSeleccionNegocio() {
+            document.getElementById("estado-partida-guardada").textContent = "";
+            document.getElementById("seleccion-negocio").classList.remove("oculto");
+        }
+
+        function reanudarPartida() {
+            if (!perfilActivo || !perfilActivo.progreso) return;
+            const guardado = perfilActivo.progreso;
+            negocioActual = guardado.negocio;
+            dineroActual = guardado.capital;
+            nivelEnCurso = guardado.nivel;
+            aciertosPrimerIntento = guardado.aciertosPrimerIntento || 0;
+            asientosRegistrados = Array.isArray(guardado.asientosRegistrados) ? guardado.asientosRegistrados : [];
+            movimientosMayor = guardado.movimientosMayor || {};
+            ultimaPosicionCorrectaNivelTres = guardado.ultimaPosicionCorrectaNivelTres ?? -1;
+            nivelActual = nivelEnCurso === 1 ? guardado.situacion : 0;
+            nivelDosActual = nivelEnCurso === 2 ? guardado.situacion : 0;
+            nivelTresActual = nivelEnCurso === 3 ? guardado.situacion : 0;
+            nivelCuatroActual = nivelEnCurso === 4 ? guardado.situacion : 0;
+            preguntaResuelta = Boolean(guardado.preguntaResuelta);
+            const intentoGuardado = Boolean(guardado.intentoPreguntaRegistrado);
+            const ayudaGuardada = Boolean(guardado.ayudaUsadaEnPregunta);
+            intentoPreguntaRegistrado = intentoGuardado;
+            ayudaUsadaEnPregunta = ayudaGuardada;
+            mensajeRespuestaGuardada = guardado.mensajeRespuesta || "";
+            nivelRecompensadoEnJuego = new Set(perfilActivo.nivelesCompletados);
+
+            document.getElementById("pantalla-inicio").classList.add("oculto");
+            document.getElementById("pantalla-juego").classList.remove("oculto");
+            document.getElementById("pantalla-felicitaciones").classList.add("oculto");
+            document.getElementById("contenido-nivel-dos").classList.toggle("oculto", nivelEnCurso === 1);
+            document.getElementById("ejercicios-nivel-dos").classList.toggle("oculto", nivelEnCurso !== 2);
+            document.getElementById("ejercicios-nivel-tres").classList.toggle("oculto", nivelEnCurso !== 3);
+            document.getElementById("ejercicios-nivel-cuatro").classList.toggle("oculto", nivelEnCurso !== 4);
+            document.getElementById("ejercicios-nivel-cinco").classList.toggle("oculto", nivelEnCurso !== 5);
+            document.getElementById("libros-contables").classList.toggle("oculto", nivelEnCurso === 5);
+            document.getElementById("titulo-negocio").textContent = `Negocio: ${negocioActual}`;
+            actualizarCapital();
+
+            if (nivelEnCurso === 1) {
+                document.getElementById("progreso-situacion").classList.remove("oculto");
+                document.getElementById("texto-situacion").classList.remove("oculto");
+                document.getElementById("opciones-respuesta").classList.remove("oculto");
+                document.getElementById("mensaje-resultado").classList.remove("oculto");
+                mostrarSituacion();
+            } else if (nivelEnCurso === 2) {
+                mostrarSituacionNivelDos();
+            } else if (nivelEnCurso === 3) {
+                mostrarSituacionNivelTres();
+            } else if (nivelEnCurso === 4) {
+                mostrarSituacionNivelCuatro();
+            } else if (nivelEnCurso === 5) {
+                prepararMemoramaNivelCinco(guardado.memorama);
+                if (parejasEncontradasMemorama.size === parejasMemoramaNivelCinco.length) {
+                    completarMemoramaNivelCinco();
+                }
+            }
+
+            intentoPreguntaRegistrado = intentoGuardado;
+            ayudaUsadaEnPregunta = ayudaGuardada;
+            if (nivelEnCurso === 4 && ayudaGuardada) restaurarPistaNivelCuatro();
+            if (preguntaResuelta) restaurarPreguntaResuelta();
+            dibujarLibrosContables();
+            document.getElementById("pantalla-inicio").classList.add("oculto");
+        }
+
+        function restaurarPreguntaResuelta() {
+            const opcionesPorNivel = {
+                1: ["opciones-respuesta", "boton-continuar"],
+                2: ["opciones-nivel-dos", "boton-continuar-nivel-dos"],
+                3: ["opciones-nivel-tres", "boton-continuar-nivel-tres"],
+                4: ["captura-asiento-nivel-cuatro", "boton-continuar-nivel-cuatro"]
+            };
+            const ids = opcionesPorNivel[nivelEnCurso];
+            if (!ids) return;
+            document.getElementById(ids[0]).querySelectorAll("button").forEach(boton => {
+                boton.disabled = true;
+            });
+            document.getElementById(ids[1]).classList.remove("oculto");
+            const idsMensaje = { 1: "mensaje-resultado", 2: "mensaje-nivel-dos", 3: "mensaje-nivel-tres", 4: "mensaje-nivel-cuatro" };
+            document.getElementById(idsMensaje[nivelEnCurso]).textContent = mensajeRespuestaGuardada;
+        }
+
+        function actualizarEstrellas() {
+            document.getElementById("estrellas-acumuladas").textContent = estrellasAcumuladas;
+            document.getElementById("estrellas-inicio").textContent = estrellasAcumuladas;
+            document.getElementById("mensaje-estrellas").textContent = errorAlGuardarEstrellas
+                ? "No se pudieron guardar las estrellas en este navegador; estarán disponibles solo durante esta sesión."
+                : "";
+            document.getElementById("mensaje-estrellas-inicio").textContent = errorAlGuardarEstrellas
+                ? "No se pudieron guardar las estrellas en este navegador; estarán disponibles solo durante esta sesión."
+                : "";
+        }
+
+        function iniciarSeguimientoNivel() {
+            aciertosPrimerIntento = 0;
+            reiniciarIntentoPregunta();
+        }
+
+        function reiniciarIntentoPregunta() {
+            intentoPreguntaRegistrado = false;
+            ayudaUsadaEnPregunta = false;
+        }
+
+        function registrarPrimerIntento(correcto) {
+            if (intentoPreguntaRegistrado) return;
+            intentoPreguntaRegistrado = true;
+            if (correcto && !ayudaUsadaEnPregunta) {
+                aciertosPrimerIntento++;
+            }
+            guardarPartida();
+        }
+
+        function finalizarNivel(nivel, totalSituaciones, siguienteTexto, siguienteAccion) {
+            if (perfilActivo && perfilActivo.nivelesCompletados.includes(nivel)) {
+                mostrarFelicitaciones(
+                    `¡Felicidades! Completaste el nivel ${nivel}`,
+                    `Este nivel ya fue completado. Tienes ${estrellasAcumuladas} estrellas acumuladas.`,
+                    siguienteTexto,
+                    siguienteAccion
+                );
+                return;
+            }
+            if (nivelRecompensadoEnJuego.has(nivel)) return;
+            nivelRecompensadoEnJuego.add(nivel);
+
+            const estrellasGanadas = aciertosPrimerIntento === totalSituaciones
+                ? 3
+                : aciertosPrimerIntento / totalSituaciones >= 0.7 ? 2 : 1;
+            estrellasAcumuladas += estrellasGanadas;
+            if (perfilActivo) perfilActivo.nivelesCompletados.push(nivel);
+            guardarEstrellas();
+            guardarPartida();
+
+            mostrarFelicitaciones(
+                `¡Felicidades! Completaste el nivel ${nivel} y ganaste ${estrellasGanadas} ${estrellasGanadas === 1 ? "estrella" : "estrellas"} ⭐`,
+                `Respuestas correctas al primer intento: ${aciertosPrimerIntento} de ${totalSituaciones}. Ganas 3 estrellas si aciertas todas, 2 si alcanzas al menos el 70% y 1 por completar el nivel. Saldo acumulado: ${estrellasAcumuladas} estrellas.`,
+                siguienteTexto,
+                siguienteAccion
+            );
+        }
+
+        function actualizarCapital() {
+            document.getElementById("capital").textContent = dineroActual;
+        }
+
+        function mostrarSituacion() {
+            if (nivelActual >= situaciones.length) {
+                document.getElementById("progreso-situacion").classList.add("oculto");
+                document.getElementById("texto-situacion").classList.add("oculto");
+                document.getElementById("opciones-respuesta").classList.add("oculto");
+                document.getElementById("mensaje-resultado").classList.add("oculto");
+                document.getElementById("boton-continuar").classList.add("oculto");
+                document.getElementById("contenido-nivel-dos").classList.add("oculto");
+                finalizarNivel(
+                    1,
+                    situaciones.length,
+                    "Entrar al nivel 2",
+                    iniciarNivelDos
+                );
+                return;           
+            }
+
+            const sit = situaciones[nivelActual];
+            document.getElementById("progreso-situacion").textContent =
+                `Situación ${nivelActual + 1} de ${situaciones.length}`;
+            document.getElementById("texto-situacion").textContent = sit.texto;
+            document.getElementById("mensaje-resultado").textContent = "";
+            document.getElementById("boton-continuar").classList.add("oculto");
+            reiniciarIntentoPregunta();
+
+            const contenedorOpciones = document.getElementById("opciones-respuesta");
+            contenedorOpciones.innerHTML = "";
+
+            sit.opciones.forEach(op => {
+                const btn = document.createElement("button");
+                btn.textContent = op.texto;
+                btn.onclick = function () {
+                    registrarPrimerIntento(op.correcto);
+                    dineroActual += op.recompensa;
+                    actualizarCapital();
+                    document.getElementById("mensaje-resultado").textContent = op.mensaje;
+                    preguntaResuelta = true;
+                    mensajeRespuestaGuardada = op.mensaje;
+                    contenedorOpciones.querySelectorAll("button").forEach(boton => {
+                        boton.disabled = true;
+                    });
+                    document.getElementById("boton-continuar").classList.remove("oculto");
+                    guardarPartida();
+                };
+                contenedorOpciones.appendChild(btn);
+            });
+        }
+
+        function continuarJuego() {
+            nivelActual++;
+            preguntaResuelta = false;
+            mensajeRespuestaGuardada = "";
+            reiniciarIntentoPregunta();
+            guardarPartida();
+            mostrarSituacion();
+        }
+
+        function iniciarNivelDos() {
+            iniciarSeguimientoNivel();
+            nivelEnCurso = 2;
+            nivelDosActual = 0;
+            preguntaResuelta = false;
+            mensajeRespuestaGuardada = "";
+            document.getElementById("pantalla-felicitaciones").classList.add("oculto");
+            document.getElementById("contenido-nivel-dos").classList.remove("oculto");
+            document.getElementById("ejercicios-nivel-dos").classList.remove("oculto");
+            document.getElementById("ejercicios-nivel-tres").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-cuatro").classList.add("oculto");
+            document.getElementById("libros-contables").classList.remove("oculto");
+            document.getElementById("progreso-situacion").classList.add("oculto");
+            document.getElementById("texto-situacion").classList.add("oculto");
+            document.getElementById("opciones-respuesta").classList.add("oculto");
+            document.getElementById("mensaje-resultado").classList.add("oculto");
+            document.getElementById("boton-continuar").classList.add("oculto");
+            inicializarLibrosContables();
+            dibujarLibrosContables();
+            mostrarSituacionNivelDos();
+            guardarPartida();
+        }
+
+        function iniciarNivelTres() {
+            nivelTresActual = 0;
+            ultimaPosicionCorrectaNivelTres = -1;
+            iniciarSeguimientoNivel();
+            nivelEnCurso = 3;
+            preguntaResuelta = false;
+            mensajeRespuestaGuardada = "";
+            document.getElementById("pantalla-felicitaciones").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-dos").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-tres").classList.remove("oculto");
+            document.getElementById("ejercicios-nivel-cuatro").classList.add("oculto");
+            document.getElementById("libros-contables").classList.remove("oculto");
+            dibujarLibrosContables();
+            mostrarSituacionNivelTres();
+            guardarPartida();
+        }
+
+        function mostrarSituacionNivelTres() {
+            const progreso = document.getElementById("progreso-nivel-tres");
+            const texto = document.getElementById("texto-situacion-nivel-tres");
+            const opciones = document.getElementById("opciones-nivel-tres");
+            const mensaje = document.getElementById("mensaje-nivel-tres");
+            const botonContinuar = document.getElementById("boton-continuar-nivel-tres");
+
+            if (nivelTresActual >= situacionesNivelTres.length) {
+                progreso.textContent = "Nivel 3 completado";
+                texto.textContent = "¡Terminaste todas las operaciones avanzadas!";
+                opciones.innerHTML = "";
+                botonContinuar.classList.add("oculto");
+                document.getElementById("ejercicios-nivel-tres").classList.add("oculto");
+                finalizarNivel(
+                    3,
+                    situacionesNivelTres.length,
+                    "Entrar al nivel 4",
+                    iniciarNivelCuatro
+                );
+                dibujarLibrosContables();
+                return;
+            }
+
+            const situacion = situacionesNivelTres[nivelTresActual];
+            progreso.textContent = `Situación ${nivelTresActual + 1} de ${situacionesNivelTres.length}`;
+            texto.textContent = situacion.texto;
+            mensaje.textContent = "";
+            botonContinuar.classList.add("oculto");
+            opciones.innerHTML = "";
+            reiniciarIntentoPregunta();
+
+            const respuestasMezcladas = [...situacion.opciones];
+            for (let indice = respuestasMezcladas.length - 1; indice > 0; indice--) {
+                const aleatorio = Math.floor(Math.random() * (indice + 1));
+                [respuestasMezcladas[indice], respuestasMezcladas[aleatorio]] =
+                    [respuestasMezcladas[aleatorio], respuestasMezcladas[indice]];
+            }
+
+            let posicionCorrecta = respuestasMezcladas.findIndex(opcion => opcion.correcto);
+            if (posicionCorrecta === ultimaPosicionCorrectaNivelTres) {
+                const otraPosicion = (posicionCorrecta + 1) % respuestasMezcladas.length;
+                [respuestasMezcladas[posicionCorrecta], respuestasMezcladas[otraPosicion]] =
+                    [respuestasMezcladas[otraPosicion], respuestasMezcladas[posicionCorrecta]];
+                posicionCorrecta = otraPosicion;
+            }
+
+            respuestasMezcladas.forEach(opcion => {
+                const boton = document.createElement("button");
+                boton.textContent = opcion.texto;
+                boton.onclick = () => {
+                    if (!opcion.correcto) {
+                        registrarPrimerIntento(false);
+                        mensaje.textContent = "Ese asiento no es correcto. Revisa las cuentas y los importes e inténtalo de nuevo.";
+                        return;
+                    }
+
+                    registrarPrimerIntento(true);
+                    ultimaPosicionCorrectaNivelTres = Array.from(opciones.children).indexOf(boton);
+                    registrarAsiento(situacion.asiento, 3, nivelTresActual + 1);
+                    mensaje.textContent = "¡Correcto! El asiento quedó registrado en el diario y en los esquemas de mayor.";
+                    preguntaResuelta = true;
+                    mensajeRespuestaGuardada = mensaje.textContent;
+                    opciones.querySelectorAll("button").forEach(respuesta => {
+                        respuesta.disabled = true;
+                    });
+                    botonContinuar.classList.remove("oculto");
+                    dibujarLibrosContables();
+                    guardarPartida();
+                };
+                opciones.appendChild(boton);
+            });
+        }
+
+        function continuarNivelTres() {
+            nivelTresActual++;
+            preguntaResuelta = false;
+            mensajeRespuestaGuardada = "";
+            reiniciarIntentoPregunta();
+            guardarPartida();
+            mostrarSituacionNivelTres();
+        }
+
+        function iniciarNivelCuatro() {
+            nivelCuatroActual = 0;
+            iniciarSeguimientoNivel();
+            nivelEnCurso = 4;
+            preguntaResuelta = false;
+            mensajeRespuestaGuardada = "";
+            document.getElementById("pantalla-felicitaciones").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-dos").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-tres").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-cuatro").classList.remove("oculto");
+            document.getElementById("libros-contables").classList.remove("oculto");
+            dibujarLibrosContables();
+            mostrarSituacionNivelCuatro();
+            guardarPartida();
+        }
+
+        function mostrarSituacionNivelCuatro() {
+            const progreso = document.getElementById("progreso-nivel-cuatro");
+            const texto = document.getElementById("texto-situacion-nivel-cuatro");
+            const captura = document.getElementById("captura-asiento-nivel-cuatro");
+            const botonContinuar = document.getElementById("boton-continuar-nivel-cuatro");
+            const botonPista = document.getElementById("boton-pista-nivel-cuatro");
+            const mensaje = document.getElementById("mensaje-nivel-cuatro");
+            const pista = document.getElementById("pista-nivel-cuatro");
+
+            if (nivelCuatroActual >= situacionesNivelCuatro.length) {
+                progreso.textContent = "Nivel 4 completado";
+                texto.textContent = "¡Terminaste las 10 situaciones!";
+                captura.innerHTML = "";
+                botonContinuar.classList.add("oculto");
+                document.getElementById("ejercicios-nivel-cuatro").classList.add("oculto");
+                finalizarNivel(
+                    4,
+                    situacionesNivelCuatro.length,
+                    "Entrar al nivel 5",
+                    iniciarNivelCinco
+                );
+                dibujarLibrosContables();
+                return;
+            }
+
+            const situacion = situacionesNivelCuatro[nivelCuatroActual];
+            progreso.textContent = `Situación ${nivelCuatroActual + 1} de ${situacionesNivelCuatro.length}`;
+            texto.textContent = situacion.texto;
+            mensaje.textContent = "";
+            pista.textContent = "";
+            pistaActualNivelCuatro = 0;
+            reiniciarIntentoPregunta();
+            botonPista.disabled = false;
+            botonPista.textContent = "Ver respuesta explicada (2 ⭐)";
+            botonContinuar.classList.add("oculto");
+            dibujarCapturaAsiento(situacion);
+        }
+
+        function mostrarPistaNivelCuatro() {
+            const situacion = situacionesNivelCuatro[nivelCuatroActual];
+            const pista = document.getElementById("pista-nivel-cuatro");
+            const botonPista = document.getElementById("boton-pista-nivel-cuatro");
+
+            if (pistaActualNivelCuatro > 0) {
+                pista.textContent = "Ya usaste la pista para esta situación.";
+                return;
+            }
+
+            if (estrellasAcumuladas < 2) {
+                pista.textContent = "Necesitas 2 estrellas para ver la respuesta explicada. Completa niveles para ganar estrellas.";
+                return;
+            }
+
+            estrellasAcumuladas -= 2;
+            pistaActualNivelCuatro = 1;
+            ayudaUsadaEnPregunta = true;
+            guardarEstrellas();
+            guardarPartida();
+            botonPista.disabled = true;
+            botonPista.textContent = "Pista usada";
+
+            const debe = situacion.asiento.lineas.filter(linea => linea.debe > 0)
+                .map(linea => `${linea.cuenta}: $${linea.debe}`);
+            const haber = situacion.asiento.lineas.filter(linea => linea.haber > 0)
+                .map(linea => `${linea.cuenta}: $${linea.haber}`);
+            pista.textContent = crearExplicacionNivelCuatro(situacion, debe, haber);
+        }
+
+        function crearExplicacionNivelCuatro(situacion, debe, haber) {
+            return [
+                "Respuesta explicada:",
+                `Debe: ${debe.join("; ")}`,
+                `Haber: ${haber.join("; ")}`,
+                situacion.pistas.join(" ")
+            ].join("\n");
+        }
+
+        function restaurarPistaNivelCuatro() {
+            const situacion = situacionesNivelCuatro[nivelCuatroActual];
+            if (!situacion) return;
+            pistaActualNivelCuatro = 1;
+            document.getElementById("boton-pista-nivel-cuatro").disabled = true;
+            document.getElementById("boton-pista-nivel-cuatro").textContent = "Pista usada";
+            const debe = situacion.asiento.lineas.filter(linea => linea.debe > 0)
+                .map(linea => `${linea.cuenta}: $${linea.debe}`);
+            const haber = situacion.asiento.lineas.filter(linea => linea.haber > 0)
+                .map(linea => `${linea.cuenta}: $${linea.haber}`);
+            document.getElementById("pista-nivel-cuatro").textContent =
+                crearExplicacionNivelCuatro(situacion, debe, haber);
+        }
+
+        function dibujarCapturaAsiento(situacion) {
+            const captura = document.getElementById("captura-asiento-nivel-cuatro");
+            const cuentasNecesarias = new Set(situacion.asiento.lineas.map(linea => linea.cuenta));
+            if (situacion.opcionesCuenta.length !== 3 ||
+                new Set(situacion.opcionesCuenta).size !== 3 ||
+                Array.from(cuentasNecesarias).some(cuenta => !situacion.opcionesCuenta.includes(cuenta))) {
+                throw new Error("Cada situación del nivel 4 debe ofrecer tres cuentas e incluir todas las cuentas del asiento.");
+            }
+            const opciones = crearOpcionesAsiento(situacion.asiento);
+            captura.innerHTML = "";
+            opciones.forEach(opcion => {
+                const boton = document.createElement("button");
+                boton.className = "opcion-asiento";
+                boton.textContent = formatearOpcionAsiento(opcion.lineas);
+                boton.onclick = () => seleccionarOpcionNivelCuatro(opcion, situacion, captura);
+                captura.appendChild(boton);
+            });
+        }
+
+        function crearOpcionesAsiento(asiento) {
+            const correcto = asiento.lineas.map(linea => ({ ...linea }));
+            const ladosInvertidos = asiento.lineas.map(linea => ({
+                cuenta: linea.cuenta,
+                debe: linea.haber,
+                haber: linea.debe
+            }));
+            const primeraCuentaInvertida = asiento.lineas.map((linea, indice) => ({
+                cuenta: linea.cuenta,
+                debe: indice === 0 ? linea.haber : linea.debe,
+                haber: indice === 0 ? linea.debe : linea.haber
+            }));
+
+            const opciones = [
+                { lineas: correcto, correcta: true },
+                { lineas: ladosInvertidos, correcta: false },
+                { lineas: primeraCuentaInvertida, correcta: false }
+            ];
+
+            for (let indice = opciones.length - 1; indice > 0; indice--) {
+                const aleatorio = Math.floor(Math.random() * (indice + 1));
+                [opciones[indice], opciones[aleatorio]] = [opciones[aleatorio], opciones[indice]];
+            }
+            return opciones;
+        }
+
+        function formatearOpcionAsiento(lineas) {
+            const debe = lineas.filter(linea => linea.debe > 0)
+                .map(linea => `${linea.cuenta}: $${linea.debe}`);
+            const haber = lineas.filter(linea => linea.haber > 0)
+                .map(linea => `${linea.cuenta}: $${linea.haber}`);
+            return `Debe\n${debe.join("\n")}\nHaber\n${haber.join("\n")}`;
+        }
+
+        function seleccionarOpcionNivelCuatro(opcion, situacion, contenedor) {
+            const mensaje = document.getElementById("mensaje-nivel-cuatro");
+            registrarPrimerIntento(opcion.correcta);
+
+            if (!opcion.correcta) {
+                mensaje.textContent = "Ese asiento no es correcto. Revisa qué cuentas aumentan o disminuyen, o compra la respuesta explicada por 2 estrellas.";
+                return;
+            }
+
+            registrarAsiento(situacion.asiento, 4, nivelCuatroActual + 1);
+            mensaje.textContent = "¡Correcto! Elegiste el asiento adecuado y quedó registrado.";
+            preguntaResuelta = true;
+            mensajeRespuestaGuardada = mensaje.textContent;
+            contenedor.querySelectorAll("button").forEach(boton => {
+                boton.disabled = true;
+            });
+            document.getElementById("boton-pista-nivel-cuatro").disabled = true;
+            document.getElementById("boton-continuar-nivel-cuatro").classList.remove("oculto");
+            dibujarLibrosContables();
+            guardarPartida();
+        }
+
+        function continuarNivelCuatro() {
+            nivelCuatroActual++;
+            preguntaResuelta = false;
+            mensajeRespuestaGuardada = "";
+            reiniciarIntentoPregunta();
+            guardarPartida();
+            mostrarSituacionNivelCuatro();
+        }
+
+        function iniciarNivelCinco() {
+            iniciarSeguimientoNivel();
+            nivelEnCurso = 5;
+            preguntaResuelta = false;
+            mensajeRespuestaGuardada = "";
+            document.getElementById("pantalla-felicitaciones").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-dos").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-tres").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-cuatro").classList.add("oculto");
+            document.getElementById("ejercicios-nivel-cinco").classList.remove("oculto");
+            document.getElementById("libros-contables").classList.add("oculto");
+            prepararMemoramaNivelCinco();
+            guardarPartida();
+        }
+
+        function prepararMemoramaNivelCinco(estadoGuardado = null) {
+            const tablero = document.getElementById("tablero-memorama");
+            let tarjetas = parejasMemoramaNivelCinco.flatMap(pareja => [
+                { parejaId: pareja.referencia, tipo: "Cuenta", texto: pareja.cuenta },
+                { parejaId: pareja.referencia, tipo: "Concepto", texto: pareja.concepto }
+            ]);
+
+            if (estadoGuardado && Array.isArray(estadoGuardado.tarjetas) &&
+                estadoGuardado.tarjetas.length === tarjetas.length &&
+                Array.isArray(estadoGuardado.encontradas) &&
+                estadoGuardado.tarjetas.every(tarjeta =>
+                    parejasMemoramaNivelCinco.some(pareja =>
+                        pareja.referencia === tarjeta.parejaId &&
+                        (tarjeta.tipo === "Cuenta" || tarjeta.tipo === "Concepto")
+                    )
+                )) {
+                tarjetas = estadoGuardado.tarjetas;
+                parejasEncontradasMemorama = new Set(estadoGuardado.encontradas);
+                parejasConErrorMemorama = new Set(estadoGuardado.conError || []);
+            } else {
+                parejasEncontradasMemorama = new Set();
+                parejasConErrorMemorama = new Set();
+            }
+
+            if (!estadoGuardado) {
+                for (let indice = tarjetas.length - 1; indice > 0; indice--) {
+                    const aleatorio = Math.floor(Math.random() * (indice + 1));
+                    [tarjetas[indice], tarjetas[aleatorio]] = [tarjetas[aleatorio], tarjetas[indice]];
+                }
+            }
+
+            tablero.innerHTML = "";
+            tarjetas.forEach((tarjeta, indice) => {
+                const boton = document.createElement("button");
+                boton.className = "carta-memorama";
+                boton.textContent = "Voltear";
+                boton.setAttribute("aria-label", `Tarjeta ${indice + 1}, oculta`);
+                boton.dataset.parejaId = tarjeta.parejaId;
+                boton.dataset.tipo = tarjeta.tipo;
+                boton.dataset.texto = tarjeta.texto;
+                boton.style.backgroundColor = `hsl(${(indice * 137.508) % 360} 68% 42%)`;
+                boton.setAttribute("aria-label", `Ficha ${indice + 1}, ${tarjeta.tipo}: ${tarjeta.texto}`);
+                const encontrada = parejasEncontradasMemorama.has(tarjeta.parejaId);
+                boton.dataset.volteada = String(encontrada);
+                if (encontrada) {
+                    boton.textContent = tarjeta.texto;
+                    boton.classList.add("encontrada");
+                    boton.disabled = true;
+                } else {
+                    boton.onclick = () => voltearTarjetaMemorama(boton);
+                }
+                tablero.appendChild(boton);
+            });
+
+            tarjetasSeleccionadasMemorama = [];
+            tableroMemoramaBloqueado = false;
+            document.getElementById("mensaje-nivel-cinco").textContent =
+                `Encuentra las ${parejasMemoramaNivelCinco.length} parejas de cuenta y concepto.`;
+            actualizarProgresoMemorama();
+        }
+
+        function guardarEstadoMemorama() {
+            return {
+                tarjetas: Array.from(document.getElementById("tablero-memorama").children).map(tarjeta => ({
+                    parejaId: tarjeta.dataset.parejaId,
+                    tipo: tarjeta.dataset.tipo,
+                    texto: tarjeta.dataset.texto
+                })),
+                encontradas: Array.from(parejasEncontradasMemorama),
+                conError: Array.from(parejasConErrorMemorama)
+            };
+        }
+
+        let tarjetasSeleccionadasMemorama = [];
+        let parejasEncontradasMemorama = new Set();
+        let parejasConErrorMemorama = new Set();
+        let tableroMemoramaBloqueado = false;
+
+        function voltearTarjetaMemorama(boton) {
+            if (tableroMemoramaBloqueado || boton.dataset.volteada === "true" ||
+                boton.classList.contains("encontrada")) {
+                return;
+            }
+
+            boton.dataset.volteada = "true";
+            boton.textContent = boton.dataset.texto;
+            boton.setAttribute("aria-label", `${boton.dataset.tipo}: ${boton.dataset.texto}`);
+            tarjetasSeleccionadasMemorama.push(boton);
+
+            if (tarjetasSeleccionadasMemorama.length < 2) return;
+
+            const [primera, segunda] = tarjetasSeleccionadasMemorama;
+            const mensaje = document.getElementById("mensaje-nivel-cinco");
+            if (primera.dataset.parejaId === segunda.dataset.parejaId &&
+                primera.dataset.tipo !== segunda.dataset.tipo) {
+                primera.classList.add("encontrada");
+                segunda.classList.add("encontrada");
+                primera.disabled = true;
+                segunda.disabled = true;
+                parejasEncontradasMemorama.add(primera.dataset.parejaId);
+                if (!parejasConErrorMemorama.has(primera.dataset.parejaId)) {
+                    aciertosPrimerIntento++;
+                }
+                tarjetasSeleccionadasMemorama = [];
+                mensaje.textContent = "¡Pareja encontrada! Relacionaste correctamente la cuenta con su concepto.";
+                actualizarProgresoMemorama();
+                guardarPartida();
+                if (parejasEncontradasMemorama.size === parejasMemoramaNivelCinco.length) {
+                    completarMemoramaNivelCinco();
+                }
+                return;
+            }
+
+            parejasConErrorMemorama.add(primera.dataset.parejaId);
+            parejasConErrorMemorama.add(segunda.dataset.parejaId);
+            guardarPartida();
+            tableroMemoramaBloqueado = true;
+            mensaje.textContent = "Estos conceptos no corresponden. Inténtalo otra vez.";
+            window.setTimeout(() => {
+                [primera, segunda].forEach(tarjeta => {
+                    tarjeta.dataset.volteada = "false";
+                    tarjeta.textContent = "Voltear";
+                    tarjeta.setAttribute("aria-label", "Tarjeta oculta");
+                });
+                tarjetasSeleccionadasMemorama = [];
+                tableroMemoramaBloqueado = false;
+            }, 900);
+        }
+
+        function actualizarProgresoMemorama() {
+            document.getElementById("progreso-nivel-cinco").textContent =
+                `Parejas encontradas: ${parejasEncontradasMemorama.size} de ${parejasMemoramaNivelCinco.length}`;
+        }
+
+        function completarMemoramaNivelCinco() {
+            document.getElementById("ejercicios-nivel-cinco").classList.add("oculto");
+            finalizarNivel(
+                5,
+                parejasMemoramaNivelCinco.length,
+                "Volver al inicio",
+                () => location.reload()
+            );
+        }
+
+        function inicializarLibrosContables() {
+            asientosRegistrados = [{
+                concepto: "Aportación inicial del propietario",
+                referencia: "Apertura",
+                lineas: [
+                    { cuenta: "Caja", debe: dineroActual, haber: 0 },
+                    { cuenta: "Capital", debe: 0, haber: dineroActual }
+                ]
+            }];
+            movimientosMayor = {
+                "Caja": { debe: [{ importe: dineroActual, referencia: "Apertura" }], haber: [] },
+                "Capital": { debe: [], haber: [{ importe: dineroActual, referencia: "Apertura" }] }
+            };
+        }
+
+        function mostrarSituacionNivelDos() {
+            const progreso = document.getElementById("progreso-nivel-dos");
+            const texto = document.getElementById("texto-situacion-nivel-dos");
+            const opciones = document.getElementById("opciones-nivel-dos");
+            const mensaje = document.getElementById("mensaje-nivel-dos");
+            const botonContinuar = document.getElementById("boton-continuar-nivel-dos");
+
+            if (nivelDosActual >= situacionesNivelDos.length) {
+                progreso.textContent = "Nivel 2 completado";
+                texto.textContent = "¡Terminaste el nivel de diario y esquemas de mayor!";
+                opciones.innerHTML = "";
+                botonContinuar.classList.add("oculto");
+                document.getElementById("ejercicios-nivel-dos").classList.add("oculto");
+                finalizarNivel(
+                    2,
+                    situacionesNivelDos.length,
+                    "Entrar al nivel 3",
+                    iniciarNivelTres
+                );
+                dibujarLibrosContables();
+                return;
+            }
+
+            const situacion = situacionesNivelDos[nivelDosActual];
+            progreso.textContent = `Situación ${nivelDosActual + 1} de ${situacionesNivelDos.length}`;
+            texto.textContent = situacion.texto;
+            mensaje.textContent = "";
+            botonContinuar.classList.add("oculto");
+            opciones.innerHTML = "";
+            reiniciarIntentoPregunta();
+
+            situacion.opciones.forEach(opcion => {
+                const boton = document.createElement("button");
+                boton.textContent = opcion.texto;
+                boton.onclick = () => {
+                    if (!opcion.correcto) {
+                        registrarPrimerIntento(false);
+                        mensaje.textContent = "Ese asiento no es correcto. Revisa qué cuenta aumenta o disminuye e inténtalo otra vez.";
+                        return;
+                    }
+
+                    registrarPrimerIntento(true);
+                    registrarAsiento(situacion.asiento, 2, nivelDosActual + 1);
+                    mensaje.textContent = "¡Correcto! El asiento quedó registrado en el diario y en los esquemas de mayor.";
+                    preguntaResuelta = true;
+                    mensajeRespuestaGuardada = mensaje.textContent;
+                    opciones.querySelectorAll("button").forEach(respuesta => {
+                        respuesta.disabled = true;
+                    });
+                    botonContinuar.classList.remove("oculto");
+                    dibujarLibrosContables();
+                    guardarPartida();
+                };
+                opciones.appendChild(boton);
+            });
+        }
+
+        function mostrarFelicitaciones(titulo, texto, textoBoton, accionBoton) {
+            document.getElementById("titulo-felicitaciones").textContent = titulo;
+            document.getElementById("texto-felicitaciones").textContent = texto;
+            const boton = document.getElementById("boton-felicitaciones");
+            boton.textContent = textoBoton;
+            boton.onclick = accionBoton;
+            document.getElementById("pantalla-felicitaciones").classList.remove("oculto");
+        }
+
+        function registrarAsiento(asiento, nivel, situacionNumero) {
+            const asientoBalanceado = asiento.lineas.reduce((total, linea) => total + linea.debe, 0) ===
+                asiento.lineas.reduce((total, linea) => total + linea.haber, 0);
+            if (!asientoBalanceado) {
+                throw new Error("El asiento contable debe quedar balanceado.");
+            }
+
+            const referencia = `N${nivel}-S${situacionNumero}`;
+            asientosRegistrados.push({ ...asiento, nivel, situacionNumero, referencia });
+            asiento.lineas.forEach(linea => {
+                if (!movimientosMayor[linea.cuenta]) {
+                    movimientosMayor[linea.cuenta] = { debe: [], haber: [] };
+                }
+                if (linea.debe > 0) movimientosMayor[linea.cuenta].debe.push({ importe: linea.debe, referencia });
+                if (linea.haber > 0) movimientosMayor[linea.cuenta].haber.push({ importe: linea.haber, referencia });
+            });
+        }
+
+        function continuarNivelDos() {
+            nivelDosActual++;
+            preguntaResuelta = false;
+            mensajeRespuestaGuardada = "";
+            reiniciarIntentoPregunta();
+            guardarPartida();
+            mostrarSituacionNivelDos();
+        }
+
+        function alternarPanel(idPanel, boton) {
+            const panel = document.getElementById(idPanel);
+            const mostrar = panel.classList.contains("oculto");
+            panel.classList.toggle("oculto", !mostrar);
+            boton.setAttribute("aria-expanded", String(mostrar));
+        }
+
+        function dibujarLibrosContables() {
+            const diario = document.getElementById("contenido-diario");
+            if (asientosRegistrados.length === 0) {
+                diario.textContent = "Todavía no hay operaciones registradas. Resuelve una situación para iniciar el diario.";
+            } else {
+                const filas = asientosRegistrados.flatMap((asiento, indice) =>
+                    asiento.lineas.map((linea, lineaIndice) => `
+                        <tr>
+                            <td>${lineaIndice === 0 ? indice + 1 : ""}</td>
+                            <td>${asiento.referencia}</td>
+                            <td>${lineaIndice === 0 ? asiento.concepto : ""}</td>
+                            <td>${linea.cuenta}</td>
+                            <td>${linea.debe ? "$" + linea.debe : ""}</td>
+                            <td>${linea.haber ? "$" + linea.haber : ""}</td>
+                        </tr>
+                    `)
+                ).join("");
+                diario.innerHTML = `
+                    <table class="tabla-contable">
+                        <thead><tr><th>Asiento</th><th>Referencia</th><th>Concepto</th><th>Cuenta</th><th>Debe</th><th>Haber</th></tr></thead>
+                        <tbody>${filas}</tbody>
+                    </table>
+                `;
+            }
+
+            const mayor = document.getElementById("contenido-mayor");
+            mayor.innerHTML = Object.entries(movimientosMayor).map(([cuenta, movimientos]) => {
+                const debe = movimientos.debe.reduce((total, movimiento) => total + movimiento.importe, 0);
+                const haber = movimientos.haber.reduce((total, movimiento) => total + movimiento.importe, 0);
+                const mostrarMovimientos = lista => lista
+                    .map(movimiento => `$${movimiento.importe}<br><small>${movimiento.referencia}</small>`)
+                    .join("<br>") || "—";
+                return `
+                    <div class="esquema-mayor">
+                        <h4>${cuenta}</h4>
+                        <table>
+                            <thead><tr><th>Debe<br><small>Importe / referencia</small></th><th>Haber<br><small>Importe / referencia</small></th></tr></thead>
+                            <tbody><tr><td>${mostrarMovimientos(movimientos.debe)}</td>
+                            <td>${mostrarMovimientos(movimientos.haber)}</td></tr>
+                            <tr><th>$${debe}</th><th>$${haber}</th></tr></tbody>
+                        </table>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        actualizarEstrellas();
+    </script>
+   
+</body>
+</html>   
